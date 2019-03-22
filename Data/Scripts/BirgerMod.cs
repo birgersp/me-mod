@@ -1,16 +1,20 @@
-﻿using Medieval.Entities.Components.Blocks;
+﻿using Sandbox.Definitions;
+using Sandbox.Game.Entities;
 using Sandbox.Game.Gui;
-using Sandbox.ModAPI;
-using VRage.Components;
+using Sandbox.Game.Players;
+using VRage;
+using VRage.Game;
 using VRage.Game.Input;
-using VRage.Game.ModAPI;
+using VRage.Game.ObjectBuilders.AI.Bot;
 using VRage.Network;
+using VRage.ObjectBuilders;
 using VRage.Session;
 using VRage.Utils;
 using VRageMath;
 
 namespace BirgerMod
 {
+    [StaticEventOwner]
     [MySessionComponent(AlwaysOn = true)]
     public class BirgerMod : MySessionComponent, IMyEventProxy
     {
@@ -34,16 +38,70 @@ namespace BirgerMod
             MyMultiplayer.RaiseEvent(this, x => x.ServerMethodInvokedByClient);
         }
 
+        private void log(string msg)
+        {
+            MyHud.Notifications.Add(new MyHudNotificationDebug(msg));
+        }
+
         [Event, Reliable, Server]
         private void ServerMethodInvokedByClient()
         {
-            MyHud.Notifications.Add(new MyHudNotificationDebug("Message called by client!"));
-            log("Hello world!");
+            var players = MyPlayers.Static.GetAllPlayers();
+            log(players.Count.ToString());
+            var id = new MyDefinitionId(typeof(MyObjectBuilder_HumanoidBot), "BarbarianForestClubStudded");
+            foreach (MyPlayer player in players.Values)
+            {
+                var position = player.ControlledEntity.GetPosition();
+                SpawnBot(id, position);
+            }
         }
 
-        private void log(string msg)
+        public void SpawnBot(MyDefinitionId botId, Vector3D position)
         {
-            ((IMyUtilities)MyAPIUtilities.Static).ShowNotification(msg, 1000, null, Color.White);
+
+            //Something along the likes of
+            //MyDefinitionId definitionId = default;
+            //Vector3D worldPosition = Vector3D.Zero;
+
+            //var createdEntity = MySession.Static.Scene.CreateEntity(definitionId);
+            //createdEntity.PositionComp.SetWorldMatrix(MatrixD.CreateWorld(worldPosition));
+            //MySession.Static.Scene.ActivateEntity(createdEntity);
+
+            var botDefinition = (MyAgentDefinition)MyDefinitionManager.Get<MyBotDefinition>(botId);
+            var newPos = MyEntities.FindFreePlace(position, 1f, 200, 5, 0.5f);
+            if (!newPos.HasValue)
+                MyEntities.FindFreePlace(position, 1f, 200, 5, 5f);
+            if (newPos.HasValue)
+                position = newPos.Value;
+
+            var gravity = VRage.Entities.Gravity.MyGravityProviderSystem.CalculateTotalGravityInPoint(position);
+            if (!Vector3.IsZero(gravity))
+                gravity.Normalize();
+            else
+                gravity = Vector3.Down;
+
+            var spawnWorldMatrix = MatrixD.CreateWorld(position, Vector3.Forward, -gravity);
+            var botEntityOb = (MyObjectBuilder_EntityBase)MyObjectBuilderSerializer.CreateNewObject(botDefinition.BotEntity);
+            botEntityOb.PositionAndOrientation = new MyPositionAndOrientation(spawnWorldMatrix);
+            botEntityOb.PersistentFlags |= MyPersistentEntityFlags2.InScene;
+            var botEntity = MyEntities.CreateFromObjectBuilder(botEntityOb);
+            botDefinition.RaiseBeforeBotSpawned(botEntity);
+
+            // Try without first, uncomment if it doesn't work
+            //            var botName = GetRandomCharacterName();
+            //            var botIdentity = MyIdentities.Static.CreateIdentity(botName);
+            //            MyIdentities.Static.SetControlledEntity(botIdentity, botEntity);
+
+            MyEntities.Add(botEntity);
+
+            botDefinition.AfterBotSpawned(botEntity);
+
+            // may cause issues in MP
+            //            var eventProxyOwner = MyExternalReplicable.FindByObject(botEntity);
+            //            if (eventProxyOwner != null)
+            //                MyMultiplayer.ReplicateImmediately(eventProxyOwner);
+
+            //log("BOT SPAWNED");
         }
     }
 }
