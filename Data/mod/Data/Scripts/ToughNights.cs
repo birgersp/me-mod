@@ -12,11 +12,11 @@ using VRage.Session;
 using VRage.Utils;
 using VRageMath;
 
-namespace BirgerMod
+namespace ToughNights
 {
     [StaticEventOwner]
     [MySessionComponent(AlwaysOn = true)]
-    public class BirgerMod : MySessionComponent, IMyEventProxy
+    public class ToughNightsMod : MySessionComponent, IMyEventProxy
     {
         MyInputContext m_inputContext = new MyInputContext("ExampleInputContext");
 
@@ -47,7 +47,6 @@ namespace BirgerMod
         private void ServerMethodInvokedByClient()
         {
             var players = MyPlayers.Static.GetAllPlayers();
-            log(players.Count.ToString());
             var id = new MyDefinitionId(typeof(MyObjectBuilder_HumanoidBot), "BarbarianForestClubStudded");
             foreach (MyPlayer player in players.Values)
             {
