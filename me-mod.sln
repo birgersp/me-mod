@@ -3,12 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.438
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Data", "Data\Data.csproj", "{08979F39-9A9C-47A5-AB4D-2FE25CA1D7A6}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{789EAF48-71C9-4CFD-86AC-BDC2DE739F41}"
-	ProjectSection(SolutionItems) = preProject
-		metadata.mod = metadata.mod
-	EndProjectSection
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ToughNightsMod", "ToughNights\ToughNightsMod.csproj", "{08979F39-9A9C-47A5-AB4D-2FE25CA1D7A6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

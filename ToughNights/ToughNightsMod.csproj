@@ -36,11 +36,14 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Scripts\ToughNights.cs" />
+    <Compile Include="mod\Data\Scripts\ToughNights.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Controls.sbc" />
+    <Content Include="mod\metadata.mod" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="mod\Data\Controls.sbc" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
