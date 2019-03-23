@@ -58,7 +58,7 @@ namespace ToughNights
             var players = MyPlayers.Static.GetAllPlayers();
             foreach (MyPlayer player in players.Values)
             {
-                playerTargetTimestamps[player.Id] = 0;
+                processPlayer(player);
             }
         }
 
@@ -80,7 +80,7 @@ namespace ToughNights
 
         private void log(string msg)
         {
-            this.GetLogger().Debug(msg);
+            MyHud.Notifications.Add(new MyHudNotificationDebug(msg));
         }
 
         [Event, Reliable, Server]
@@ -144,10 +144,24 @@ namespace ToughNights
 
         private void processPlayer(MyPlayer player)
         {
+            var playerPosition = player.ControlledEntity.GetPosition();
+
             var info = weather.CreateSolarObservation(weather.CurrentTime, player.ControlledEntity.GetPosition());
             var solarElevation = info.SolarElevation;
             if (solarElevation > -5)
                 return;
+
+            var sphere = new BoundingSphereD(playerPosition, 20);
+            var entities = MyEntities.GetEntitiesInSphere(ref sphere);
+            foreach (var entity in entities)
+            {
+                String definitionId = entity.DefinitionId.ToString();
+                if (definitionId == "Block:TorchWall") { 
+                    log("Its a torch!");
+                    return;
+                }
+            }
+
             var position = player.ControlledEntity.GetPosition();
             spawnBarbarian(position);
         }
