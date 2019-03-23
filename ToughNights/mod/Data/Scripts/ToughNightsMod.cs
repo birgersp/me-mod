@@ -156,8 +156,7 @@ namespace ToughNights
                 return;
             }
 
-            var position = player.ControlledEntity.GetPosition();
-            spawnBarbarian(position);
+            spawnBarbarian(playerPosition);
         }
 
         private bool positionHasNearbyLightSource(Vector3D position)
