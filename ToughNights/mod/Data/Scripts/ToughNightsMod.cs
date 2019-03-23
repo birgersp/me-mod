@@ -24,7 +24,7 @@ namespace ToughNights
     [MySessionComponent(AlwaysOn = true)]
     public class ToughNightsMod : MySessionComponent, IMyEventProxy
     {
-        MyInputContext m_inputContext = new MyInputContext("ExampleInputContext");
+        MyInputContext inputContext = new MyInputContext("ToughNightsControl");
         private readonly Dictionary<MyPlayer.PlayerId, uint> playerTargetTimestamps = new Dictionary<MyPlayer.PlayerId, uint>();
 
         [Automatic]
@@ -36,29 +36,29 @@ namespace ToughNights
         private Action serverAction;
         private Boolean fastForward = false;
 
+        private readonly MyDefinitionId barbarianId = new MyDefinitionId(typeof(MyObjectBuilder_HumanoidBot), "BarbarianForestClubStudded");
+
         protected override void OnLoad()
         {
             base.OnLoad();
-            m_inputContext.RegisterAction(MyStringHash.GetOrCompute("ToughNights_Test"), () => { invokeServerAction(invokeTest); });
-            m_inputContext.RegisterAction(MyStringHash.GetOrCompute("ToughNights_FastForward"), setFastForward);
-            m_inputContext.RegisterAction(MyStringHash.GetOrCompute("ToughNights_Normal"), setNormal);
-            m_inputContext.Push();
+            inputContext.RegisterAction(MyStringHash.GetOrCompute("ToughNights_Test"), () => { invokeServerAction(invokeTest); });
+            inputContext.RegisterAction(MyStringHash.GetOrCompute("ToughNights_FastForward"), setFastForward);
+            inputContext.RegisterAction(MyStringHash.GetOrCompute("ToughNights_Normal"), setNormal);
+            inputContext.Push();
         }
 
         protected override void OnUnload()
         {
-            m_inputContext.Pop();
+            inputContext.Pop();
             base.OnUnload();
         }
 
         private void invokeTest()
         {
             var players = MyPlayers.Static.GetAllPlayers();
-            var id = new MyDefinitionId(typeof(MyObjectBuilder_HumanoidBot), "BarbarianForestClubStudded");
             foreach (MyPlayer player in players.Values)
             {
-                var position = player.ControlledEntity.GetPosition();
-                SpawnBot(id, position);
+                playerTargetTimestamps[player.Id] = 0;
             }
         }
 
@@ -80,7 +80,7 @@ namespace ToughNights
 
         private void log(string msg)
         {
-            MyHud.Notifications.Add(new MyHudNotificationDebug(msg));
+            this.GetLogger().Debug(msg);
         }
 
         [Event, Reliable, Server]
@@ -102,47 +102,74 @@ namespace ToughNights
             if (!MyMultiplayerModApi.Static.IsServer)
                 return;
 
+            var players = MyPlayers.Static.GetAllPlayers();
+
             currentTime_sec = DateTime.Now.ToUnixTimestamp();
-            if (currentTime_sec - prevUpdateTime_sec > 2)
+            if (currentTime_sec - prevUpdateTime_sec >= 2)
             {
                 prevUpdateTime_sec = currentTime_sec;
-                //log("Yo waddup");
+                //foreach (MyPlayer player in players.Values)
+                //{
+                //    processPlayer(player);
+                //}
             }
 
             if (fastForward)
             {
-                var nextOffset = weather.DayOffset + TimeSpan.FromSeconds(1200 * MyEngineConstants.UPDATE_STEP_SIZE_IN_SECONDS);
+                var nextOffset = weather.DayOffset + TimeSpan.FromSeconds(600 * MyEngineConstants.UPDATE_STEP_SIZE_IN_SECONDS);
                 weather.DayOffset = TimeSpan.FromMinutes(nextOffset.TotalMinutes % weather.DayDurationInMinutes);
             }
 
-            var players = MyPlayers.Static.GetAllPlayers();
             foreach (MyPlayer player in players.Values)
             {
+                checkPlayerTargetTimestamp(player);
+            }
+        }
+
+        private void checkPlayerTargetTimestamp(MyPlayer player)
+        {
+            uint targetTimestamp;
+            if (!playerTargetTimestamps.TryGetValue(player.Id, out targetTimestamp))
+            {
+                targetTimestamp = createTargetTimestamp();
+                playerTargetTimestamps[player.Id] = targetTimestamp;
+            }
+
+            if (currentTime_sec > targetTimestamp)
+            {
                 processPlayer(player);
+                playerTargetTimestamps[player.Id] = createTargetTimestamp();
             }
         }
 
         private void processPlayer(MyPlayer player)
         {
-            uint timestamp;
-            if (!playerTargetTimestamps.TryGetValue(player.Id, out timestamp))
-            {
-                timestamp = createTargetTimestamp();
-            }
+            var info = weather.CreateSolarObservation(weather.CurrentTime, player.ControlledEntity.GetPosition());
+            var solarElevation = info.SolarElevation;
+            if (solarElevation > -5)
+                return;
+            var position = player.ControlledEntity.GetPosition();
+            spawnBarbarian(position);
         }
 
         private uint createTargetTimestamp()
         {
-            return 0;
+            var random = new Random();
+            return currentTime_sec + (uint)(random.NextDouble() * (4.0 * 60.0)) + 60;
         }
 
-        private void SpawnBot(MyDefinitionId botId, Vector3D position)
+        private void spawnBarbarian(Vector3D position)
         {
             var newPos = MyEntities.FindFreePlace(position, 1f, 200, 5, 0.5f);
             if (!newPos.HasValue)
                 newPos = MyEntities.FindFreePlace(position, 1f, 200, 5, 5f);
+            if (!newPos.HasValue)
+            {
+                log("Unable to find place for the barbarian to spawn");
+                return;
+            }
             var botPosition = newPos.Value;
-            var botDefinition = (MyAgentDefinition)MyDefinitionManager.Get<MyBotDefinition>(botId);
+            var botDefinition = (MyAgentDefinition)MyDefinitionManager.Get<MyBotDefinition>(barbarianId);
             var createdEntity = MySession.Static.Scene.CreateEntity(botDefinition.BotEntity);
             createdEntity.PositionComp.SetWorldMatrix(MatrixD.CreateWorld(botPosition));
             botDefinition.RaiseBeforeBotSpawned(createdEntity);
