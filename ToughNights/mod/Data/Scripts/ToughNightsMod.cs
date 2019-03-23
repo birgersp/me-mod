@@ -12,7 +12,6 @@ using VRage.Game;
 using VRage.Game.Input;
 using VRage.Game.ObjectBuilders.AI.Bot;
 using VRage.Network;
-using VRage.ObjectBuilders;
 using VRage.Session;
 using VRage.Utils;
 using VRageMath;
@@ -24,6 +23,8 @@ namespace ToughNights
     [MySessionComponent(AlwaysOn = true)]
     public class ToughNightsMod : MySessionComponent, IMyEventProxy
     {
+        private static readonly double LIGHT_ENTITY_RADIUS = 15.0;
+
         MyInputContext inputContext = new MyInputContext("ToughNightsControl");
         private readonly Dictionary<MyPlayer.PlayerId, uint> playerTargetTimestamps = new Dictionary<MyPlayer.PlayerId, uint>();
 
@@ -31,12 +32,21 @@ namespace ToughNights
         private readonly MySectorWeatherComponent weather = null;
 
         private uint currentTime_sec;
-        private uint prevUpdateTime_sec;
 
         private Action serverAction;
         private Boolean fastForward = false;
 
         private readonly MyDefinitionId barbarianId = new MyDefinitionId(typeof(MyObjectBuilder_HumanoidBot), "BarbarianForestClubStudded");
+
+        private static readonly List<String> lightEntityDefinitionIds = new List<String>();
+
+        static ToughNightsMod()
+        {
+            lightEntityDefinitionIds.Add("Block:TorchWall");
+            lightEntityDefinitionIds.Add("Block:TorchStand");
+            lightEntityDefinitionIds.Add("Block:Brazier");
+            lightEntityDefinitionIds.Add("Block:Bonfire");
+        }
 
         protected override void OnLoad()
         {
@@ -58,7 +68,7 @@ namespace ToughNights
             var players = MyPlayers.Static.GetAllPlayers();
             foreach (MyPlayer player in players.Values)
             {
-                processPlayer(player);
+                playerTargetTimestamps[player.Id] = 0;
             }
         }
 
@@ -102,24 +112,14 @@ namespace ToughNights
             if (!MyMultiplayerModApi.Static.IsServer)
                 return;
 
-            var players = MyPlayers.Static.GetAllPlayers();
-
-            currentTime_sec = DateTime.Now.ToUnixTimestamp();
-            if (currentTime_sec - prevUpdateTime_sec >= 2)
-            {
-                prevUpdateTime_sec = currentTime_sec;
-                //foreach (MyPlayer player in players.Values)
-                //{
-                //    processPlayer(player);
-                //}
-            }
-
             if (fastForward)
             {
                 var nextOffset = weather.DayOffset + TimeSpan.FromSeconds(600 * MyEngineConstants.UPDATE_STEP_SIZE_IN_SECONDS);
                 weather.DayOffset = TimeSpan.FromMinutes(nextOffset.TotalMinutes % weather.DayDurationInMinutes);
             }
 
+            currentTime_sec = DateTime.Now.ToUnixTimestamp();
+            var players = MyPlayers.Static.GetAllPlayers();
             foreach (MyPlayer player in players.Values)
             {
                 checkPlayerTargetTimestamp(player);
@@ -151,19 +151,25 @@ namespace ToughNights
             if (solarElevation > -5)
                 return;
 
-            var sphere = new BoundingSphereD(playerPosition, 20);
-            var entities = MyEntities.GetEntitiesInSphere(ref sphere);
-            foreach (var entity in entities)
+            if (positionHasNearbyLightSource(playerPosition))
             {
-                String definitionId = entity.DefinitionId.ToString();
-                if (definitionId == "Block:TorchWall") { 
-                    log("Its a torch!");
-                    return;
-                }
+                return;
             }
 
             var position = player.ControlledEntity.GetPosition();
             spawnBarbarian(position);
+        }
+
+        private bool positionHasNearbyLightSource(Vector3D position)
+        {
+            var sphere = new BoundingSphereD(position, LIGHT_ENTITY_RADIUS);
+            var entities = MyEntities.GetEntitiesInSphere(ref sphere);
+            foreach (var entity in entities)
+            {
+                if (lightEntityDefinitionIds.Contains(entity.DefinitionId.ToString()))
+                    return true;
+            }
+            return false;
         }
 
         private uint createTargetTimestamp()
@@ -179,7 +185,6 @@ namespace ToughNights
                 newPos = MyEntities.FindFreePlace(position, 1f, 200, 5, 5f);
             if (!newPos.HasValue)
             {
-                log("Unable to find place for the barbarian to spawn");
                 return;
             }
             var botPosition = newPos.Value;
