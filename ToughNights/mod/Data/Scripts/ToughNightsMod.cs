@@ -25,13 +25,13 @@ namespace ToughNights
     public class ToughNightsMod : MySessionComponent, IMyEventProxy
     {
         MyInputContext m_inputContext = new MyInputContext("ExampleInputContext");
-        private readonly Dictionary<MyPlayer.PlayerId, Double> playerTargetTimestamps = new Dictionary<MyPlayer.PlayerId, Double>();
+        private readonly Dictionary<MyPlayer.PlayerId, uint> playerTargetTimestamps = new Dictionary<MyPlayer.PlayerId, uint>();
 
         [Automatic]
         private readonly MySectorWeatherComponent weather = null;
 
-        private Double currentTime_sec;
-        private Double prevUpdateTime_sec;
+        private uint currentTime_sec;
+        private uint prevUpdateTime_sec;
 
         private Action serverAction;
         private Boolean fastForward = false;
@@ -102,12 +102,18 @@ namespace ToughNights
             if (!MyMultiplayerModApi.Static.IsServer)
                 return;
 
-            currentTime_sec = weather.CurrentTime.TotalSeconds;
-            if (currentTime_sec - prevUpdateTime_sec < 2)
-                return;
-            prevUpdateTime_sec = currentTime_sec;
+            currentTime_sec = DateTime.Now.ToUnixTimestamp();
+            if (currentTime_sec - prevUpdateTime_sec > 2)
+            {
+                prevUpdateTime_sec = currentTime_sec;
+                //log("Yo waddup");
+            }
 
-            log(fastForward.ToString());
+            if (fastForward)
+            {
+                var nextOffset = weather.DayOffset + TimeSpan.FromSeconds(1200 * MyEngineConstants.UPDATE_STEP_SIZE_IN_SECONDS);
+                weather.DayOffset = TimeSpan.FromMinutes(nextOffset.TotalMinutes % weather.DayDurationInMinutes);
+            }
 
             var players = MyPlayers.Static.GetAllPlayers();
             foreach (MyPlayer player in players.Values)
@@ -118,14 +124,14 @@ namespace ToughNights
 
         private void processPlayer(MyPlayer player)
         {
-            Double timestamp;
+            uint timestamp;
             if (!playerTargetTimestamps.TryGetValue(player.Id, out timestamp))
             {
                 timestamp = createTargetTimestamp();
             }
         }
 
-        private Double createTargetTimestamp()
+        private uint createTargetTimestamp()
         {
             return 0;
         }
