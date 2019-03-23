@@ -34,6 +34,7 @@ namespace ToughNights
         private Double prevUpdateTime_sec;
 
         private Action serverAction;
+        private Boolean fastForward = false;
 
         protected override void OnLoad()
         {
@@ -63,12 +64,12 @@ namespace ToughNights
 
         private void setFastForward()
         {
-
+            fastForward = true;
         }
 
         private void setNormal()
         {
-
+            fastForward = false;
         }
 
         private void invokeServerAction(Action action)
@@ -106,7 +107,7 @@ namespace ToughNights
                 return;
             prevUpdateTime_sec = currentTime_sec;
 
-            log(currentTime_sec.ToString());
+            log(fastForward.ToString());
 
             var players = MyPlayers.Static.GetAllPlayers();
             foreach (MyPlayer player in players.Values)
@@ -122,8 +123,6 @@ namespace ToughNights
             {
                 timestamp = createTargetTimestamp();
             }
-
-
         }
 
         private Double createTargetTimestamp()
