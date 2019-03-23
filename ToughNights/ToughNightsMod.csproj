@@ -36,7 +36,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="mod\Data\Scripts\ToughNights.cs" />
+    <Compile Include="mod\Data\Scripts\ToughNightsMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
