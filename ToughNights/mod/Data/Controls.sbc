@@ -1,10 +1,10 @@
 ﻿<?xml version="1.0"?>
 <Definitions xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <Definition xsi:type="MyObjectBuilder_ControlDefinition">
-    <Id Type="MyObjectBuilder_ControlDefinition" Subtype="ExampleControlName" />
-    <DisplayName>Spawn in barbarians</DisplayName>
-    <Description>You know you want to</Description>
-    <Category>Character</Category>
-    <Primary Key="Z" />
+    <Id Type="MyObjectBuilder_ControlDefinition" Subtype="ToughNights_Test" />
+    <DisplayName>Tough Nights Test</DisplayName>
+    <Description>Invoke some test</Description>
+    <Category>GUI</Category>
+    <Primary Key="NumPad0" />
   </Definition>
 </Definitions>

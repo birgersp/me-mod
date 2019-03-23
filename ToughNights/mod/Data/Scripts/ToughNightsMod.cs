@@ -33,10 +33,14 @@ namespace ToughNights
         private Double currentTime_sec;
         private Double prevUpdateTime_sec;
 
+        private Action serverAction;
+
         protected override void OnLoad()
         {
             base.OnLoad();
-            m_inputContext.RegisterAction(MyStringHash.GetOrCompute("ExampleControlName"), HandleInput);
+            m_inputContext.RegisterAction(MyStringHash.GetOrCompute("ToughNights_Test"), () => { invokeServerAction(invokeTest); });
+            m_inputContext.RegisterAction(MyStringHash.GetOrCompute("ToughNights_FastForward"), setFastForward);
+            m_inputContext.RegisterAction(MyStringHash.GetOrCompute("ToughNights_Normal"), setNormal);
             m_inputContext.Push();
         }
 
@@ -46,8 +50,30 @@ namespace ToughNights
             base.OnUnload();
         }
 
-        private void HandleInput(ref MyInputContext.ActionEvent action)
+        private void invokeTest()
         {
+            var players = MyPlayers.Static.GetAllPlayers();
+            var id = new MyDefinitionId(typeof(MyObjectBuilder_HumanoidBot), "BarbarianForestClubStudded");
+            foreach (MyPlayer player in players.Values)
+            {
+                var position = player.ControlledEntity.GetPosition();
+                SpawnBot(id, position);
+            }
+        }
+
+        private void setFastForward()
+        {
+
+        }
+
+        private void setNormal()
+        {
+
+        }
+
+        private void invokeServerAction(Action action)
+        {
+            serverAction = action;
             MyMultiplayer.RaiseEvent(this, x => x.ServerMethodInvokedByClient);
         }
 
@@ -61,22 +87,11 @@ namespace ToughNights
         {
             try
             {
-                tryFunction();
+                serverAction();
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.ToString());
-            }
-        }
-
-        private void tryFunction()
-        {
-            var players = MyPlayers.Static.GetAllPlayers();
-            var id = new MyDefinitionId(typeof(MyObjectBuilder_HumanoidBot), "BarbarianForestClubStudded");
-            foreach (MyPlayer player in players.Values)
-            {
-                var position = player.ControlledEntity.GetPosition();
-                SpawnBot(id, position);
             }
         }
 
@@ -87,11 +102,11 @@ namespace ToughNights
                 return;
 
             currentTime_sec = weather.CurrentTime.TotalSeconds;
-            if (currentTime_sec - prevUpdateTime_sec < 5)
+            if (currentTime_sec - prevUpdateTime_sec < 2)
                 return;
-
             prevUpdateTime_sec = currentTime_sec;
-            log("this is your server!");
+
+            log(currentTime_sec.ToString());
 
             var players = MyPlayers.Static.GetAllPlayers();
             foreach (MyPlayer player in players.Values)
