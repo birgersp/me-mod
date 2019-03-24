@@ -10,6 +10,7 @@ using VRage;
 using VRage.Components;
 using VRage.Game;
 using VRage.Game.Input;
+using VRage.Game.ModAPI;
 using VRage.Game.ObjectBuilders.AI.Bot;
 using VRage.Network;
 using VRage.Session;
@@ -31,13 +32,11 @@ namespace ToughNights
         [Automatic]
         private readonly MySectorWeatherComponent weather = null;
 
-        private uint currentTime_sec;
+        private static uint currentTime_sec;
 
         private Action serverAction;
-        private Boolean fastForward = false;
-
-        private readonly MyDefinitionId barbarianId = new MyDefinitionId(typeof(MyObjectBuilder_HumanoidBot), "BarbarianForestClubStudded");
-
+        private static Boolean fastForward = false;
+        private static readonly MyDefinitionId barbarianId = new MyDefinitionId(typeof(MyObjectBuilder_HumanoidBot), "BarbarianForestClubStudded");
         private static readonly List<String> lightEntityDefinitionIds = new List<String>();
 
         static ToughNightsMod()
@@ -63,12 +62,12 @@ namespace ToughNights
             base.OnUnload();
         }
 
-        private void invokeTest()
+        private static void invokeTest()
         {
             var players = MyPlayers.Static.GetAllPlayers();
             foreach (MyPlayer player in players.Values)
             {
-                playerTargetTimestamps[player.Id] = 0;
+                broadcastNotification(player.ControlledEntity.DisplayName);
             }
         }
 
@@ -88,22 +87,10 @@ namespace ToughNights
             MyMultiplayer.RaiseEvent(this, x => x.ServerMethodInvokedByClient);
         }
 
-        private void log(string msg)
-        {
-            MyHud.Notifications.Add(new MyHudNotificationDebug(msg));
-        }
-
         [Event, Reliable, Server]
         private void ServerMethodInvokedByClient()
         {
-            try
-            {
-                serverAction();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e.ToString());
-            }
+            serverAction();
         }
 
         [FixedUpdate]
@@ -112,13 +99,14 @@ namespace ToughNights
             if (!MyMultiplayerModApi.Static.IsServer)
                 return;
 
+            currentTime_sec = DateTime.Now.ToUnixTimestamp();
+
             if (fastForward)
             {
                 var nextOffset = weather.DayOffset + TimeSpan.FromSeconds(600 * MyEngineConstants.UPDATE_STEP_SIZE_IN_SECONDS);
                 weather.DayOffset = TimeSpan.FromMinutes(nextOffset.TotalMinutes % weather.DayDurationInMinutes);
             }
 
-            currentTime_sec = DateTime.Now.ToUnixTimestamp();
             var players = MyPlayers.Static.GetAllPlayers();
             foreach (MyPlayer player in players.Values)
             {
@@ -146,7 +134,7 @@ namespace ToughNights
         {
             var playerPosition = player.ControlledEntity.GetPosition();
 
-            var info = weather.CreateSolarObservation(weather.CurrentTime, player.ControlledEntity.GetPosition());
+            var info = weather.CreateSolarObservation(weather.CurrentTime, playerPosition);
             var solarElevation = info.SolarElevation;
             if (solarElevation > -5)
                 return;
@@ -156,10 +144,12 @@ namespace ToughNights
                 return;
             }
 
+            broadcastNotification($"{player.ControlledEntity.DisplayName} is under attack! solarElevation: {solarElevation}");
+            spawnBarbarian(playerPosition);
             spawnBarbarian(playerPosition);
         }
 
-        private bool positionHasNearbyLightSource(Vector3D position)
+        private static bool positionHasNearbyLightSource(Vector3D position)
         {
             var sphere = new BoundingSphereD(position, LIGHT_ENTITY_RADIUS);
             var entities = MyEntities.GetEntitiesInSphere(ref sphere);
@@ -171,13 +161,13 @@ namespace ToughNights
             return false;
         }
 
-        private uint createTargetTimestamp()
+        private static uint createTargetTimestamp()
         {
             var random = new Random();
             return currentTime_sec + (uint)(random.NextDouble() * (4.0 * 60.0)) + 60;
         }
 
-        private void spawnBarbarian(Vector3D position)
+        private static void spawnBarbarian(Vector3D position)
         {
             var newPos = MyEntities.FindFreePlace(position, 1f, 200, 5, 0.5f);
             if (!newPos.HasValue)
@@ -193,6 +183,19 @@ namespace ToughNights
             botDefinition.RaiseBeforeBotSpawned(createdEntity);
             MySession.Static.Scene.ActivateEntity(createdEntity);
             botDefinition.AfterBotSpawned(createdEntity);
+        }
+
+        private static void broadcastNotification(string message)
+        {
+            MyMultiplayerModApi.Static.RaiseStaticEvent(x => showNotificationToClients, message);
+        }
+
+        [Event]
+        [Server]
+        [Broadcast]
+        private static void showNotificationToClients(string msg)
+        {
+            ((IMyUtilities)MyAPIUtilities.Static).ShowNotification(msg);
         }
     }
 }
