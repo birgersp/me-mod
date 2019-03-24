@@ -12,6 +12,7 @@ using VRage.Game.Input;
 using VRage.Game.ModAPI;
 using VRage.Game.ObjectBuilders.AI.Bot;
 using VRage.Network;
+using VRage.ObjectBuilder;
 using VRage.Session;
 using VRage.Utils;
 using VRageMath;
@@ -37,15 +38,19 @@ namespace ToughNights
         private static uint currentTime_sec;
         private static Boolean fastForward = false;
         private static readonly MyDefinitionId barbarianId = new MyDefinitionId(typeof(MyObjectBuilder_HumanoidBot), "BarbarianForestClubStudded");
-        private static readonly List<String> lightEntityDefinitionIds = new List<String>();
+        private static readonly List<MyDefinitionId> lightEntityDefinitionIds = new List<MyDefinitionId>();
 
         static ToughNightsMod()
         {
-            lightEntityDefinitionIds.Add("Block:TorchWall");
-            lightEntityDefinitionIds.Add("Block:TorchStand");
-            lightEntityDefinitionIds.Add("Block:Brazier");
-            lightEntityDefinitionIds.Add("Block:Bonfire");
-            lightEntityDefinitionIds.Add("Block:BedWood");
+            List<MyDefinitionId> lightEntityDefinitionIds = new List<MyDefinitionId>();
+            if (MyObjectBuilderType.TryParse("Block", out var blockType))
+            {
+                lightEntityDefinitionIds.Add(new MyDefinitionId(blockType, "TorchWall"));
+                lightEntityDefinitionIds.Add(new MyDefinitionId(blockType, "TorchStand"));
+                lightEntityDefinitionIds.Add(new MyDefinitionId(blockType, "Brazier"));
+                lightEntityDefinitionIds.Add(new MyDefinitionId(blockType, "Bonfire"));
+                lightEntityDefinitionIds.Add(new MyDefinitionId(blockType, "BedWood"));
+            }
         }
 
         // (Only for offline-testing)
@@ -71,10 +76,15 @@ namespace ToughNights
         // (Only for offline-testing)
         private void invokeTest()
         {
+            broadcastNotification("Checking");
             var players = MyPlayers.Static.GetAllPlayers();
             foreach (MyPlayer player in players.Values)
             {
-                processPlayer(player);
+                var position = player.ControlledEntity.GetPosition();
+                if (positionHasNearbyLightSource(position))
+                {
+                    broadcastNotification("It's a match!");
+                }
             }
         }
 
@@ -170,8 +180,13 @@ namespace ToughNights
             var entities = MyEntities.GetEntitiesInSphere(ref sphere);
             foreach (var entity in entities)
             {
-                if (lightEntityDefinitionIds.Contains(entity.DefinitionId.ToString()))
-                    return true;
+                foreach (MyDefinitionId definitionId in lightEntityDefinitionIds)
+                {
+                    if (definitionId == entity.DefinitionId)
+                    {
+                        return true;
+                    }
+                }
             }
             return false;
         }
