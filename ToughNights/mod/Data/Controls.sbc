@@ -3,21 +3,21 @@
   <Definition xsi:type="MyObjectBuilder_ControlDefinition">
     <Id Type="MyObjectBuilder_ControlDefinition" Subtype="ToughNights_Test" />
     <DisplayName>Tough Nights Test</DisplayName>
-    <Description>Invoke some test</Description>
+    <Description>Only for mod-testing purposes, won't work when playing on a dedicated server</Description>
     <Category>GUI</Category>
     <Primary Key="NumPad0" />
   </Definition>
   <Definition xsi:type="MyObjectBuilder_ControlDefinition">
     <Id Type="MyObjectBuilder_ControlDefinition" Subtype="ToughNights_FastForward" />
     <DisplayName>Tough Nights Fast Forward</DisplayName>
-    <Description>Fast forward</Description>
+    <Description>Only for mod-testing purposes, won't work when playing on a dedicated server</Description>
     <Category>GUI</Category>
     <Primary Key="NumPad1" />
   </Definition>
   <Definition xsi:type="MyObjectBuilder_ControlDefinition">
     <Id Type="MyObjectBuilder_ControlDefinition" Subtype="ToughNights_Normal" />
     <DisplayName>Tough Nights Normal</DisplayName>
-    <Description>Normal</Description>
+    <Description>Only for mod-testing purposes, won't work when playing on a dedicated server</Description>
     <Category>GUI</Category>
     <Primary Key="NumPad2" />
   </Definition>
