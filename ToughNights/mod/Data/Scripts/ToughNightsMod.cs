@@ -25,6 +25,8 @@ namespace ToughNights
     public class ToughNightsMod : MySessionComponent, IMyEventProxy
     {
         private static readonly double LIGHT_ENTITY_RADIUS = 15.0;
+        private static readonly double MIN_TIME_BETWEEN_ATTACKS_SEC = 120.0;
+        private static readonly double ATTACKS_TIME_WINDOW_SEC = 480.0;
 
         private readonly Dictionary<MyPlayer.PlayerId, uint> playerTargetTimestamps = new Dictionary<MyPlayer.PlayerId, uint>();
 
@@ -72,12 +74,7 @@ namespace ToughNights
             var players = MyPlayers.Static.GetAllPlayers();
             foreach (MyPlayer player in players.Values)
             {
-                var sphere = new BoundingSphereD(player.ControlledEntity.GetPosition(), LIGHT_ENTITY_RADIUS);
-                var entities = MyEntities.GetEntitiesInSphere(ref sphere);
-                foreach (var entity in entities)
-                {
-                    broadcastNotification(entity.DefinitionId.ToString());
-                }
+                processPlayer(player);
             }
         }
 
@@ -177,7 +174,7 @@ namespace ToughNights
         private static uint createTargetTimestamp()
         {
             var random = new Random();
-            return currentTime_sec + (uint)(random.NextDouble() * (4.0 * 60.0)) + 60;
+            return currentTime_sec + (uint)(random.NextDouble() * (ATTACKS_TIME_WINDOW_SEC) + MIN_TIME_BETWEEN_ATTACKS_SEC);
         }
 
         private static void spawnBarbarian(Vector3D position)
