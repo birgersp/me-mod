@@ -27,6 +27,7 @@ namespace ToughNights
         private static readonly double LIGHT_ENTITY_RADIUS = 15.0;
         private static readonly double MIN_TIME_BETWEEN_ATTACKS_SEC = 120.0;
         private static readonly double ATTACKS_TIME_WINDOW_SEC = 480.0;
+        private static readonly double MIN_SOLAR_ELEVATION = -5.0;
 
         private readonly Dictionary<MyPlayer.PlayerId, uint> playerTargetTimestamps = new Dictionary<MyPlayer.PlayerId, uint>();
 
@@ -145,18 +146,23 @@ namespace ToughNights
         {
             var playerPosition = player.ControlledEntity.GetPosition();
 
-            var info = weather.CreateSolarObservation(weather.CurrentTime, playerPosition);
-            var solarElevation = info.SolarElevation;
-            if (solarElevation > -5)
+            if (!withinSolarElevationLimit(playerPosition))
                 return;
 
             if (positionHasNearbyLightSource(playerPosition))
-            {
                 return;
-            }
 
             spawnBarbarian(playerPosition);
             spawnBarbarian(playerPosition);
+        }
+
+        private bool withinSolarElevationLimit(Vector3D position)
+        {
+            var info = weather.CreateSolarObservation(weather.CurrentTime, position);
+            var solarElevation = info.SolarElevation;
+            if (solarElevation <= MIN_SOLAR_ELEVATION)
+                return true;
+            return false;
         }
 
         private static bool positionHasNearbyLightSource(Vector3D position)
