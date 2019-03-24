@@ -42,7 +42,6 @@ namespace ToughNights
 
         static ToughNightsMod()
         {
-            List<MyDefinitionId> lightEntityDefinitionIds = new List<MyDefinitionId>();
             if (MyObjectBuilderType.TryParse("Block", out var blockType))
             {
                 lightEntityDefinitionIds.Add(new MyDefinitionId(blockType, "TorchWall"));
