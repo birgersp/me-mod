@@ -26,15 +26,13 @@ namespace ToughNights
     {
         private static readonly double LIGHT_ENTITY_RADIUS = 15.0;
 
-        MyInputContext inputContext = new MyInputContext("ToughNightsControl");
         private readonly Dictionary<MyPlayer.PlayerId, uint> playerTargetTimestamps = new Dictionary<MyPlayer.PlayerId, uint>();
 
         [Automatic]
         private readonly MySectorWeatherComponent weather = null;
 
-        private static uint currentTime_sec;
-
         private Action serverAction;
+        private static uint currentTime_sec;
         private static Boolean fastForward = false;
         private static readonly MyDefinitionId barbarianId = new MyDefinitionId(typeof(MyObjectBuilder_HumanoidBot), "BarbarianForestClubStudded");
         private static readonly List<String> lightEntityDefinitionIds = new List<String>();
@@ -45,8 +43,13 @@ namespace ToughNights
             lightEntityDefinitionIds.Add("Block:TorchStand");
             lightEntityDefinitionIds.Add("Block:Brazier");
             lightEntityDefinitionIds.Add("Block:Bonfire");
+            lightEntityDefinitionIds.Add("Block:BedWood");
         }
 
+        // (Only for offline-testing)
+        MyInputContext inputContext = new MyInputContext("ToughNightsControl");
+
+        // (Only for offline-testing)
         protected override void OnLoad()
         {
             base.OnLoad();
@@ -56,37 +59,48 @@ namespace ToughNights
             inputContext.Push();
         }
 
+        // (Only for offline-testing)
         protected override void OnUnload()
         {
             inputContext.Pop();
             base.OnUnload();
         }
 
-        private static void invokeTest()
+        // (Only for offline-testing)
+        private void invokeTest()
         {
             var players = MyPlayers.Static.GetAllPlayers();
             foreach (MyPlayer player in players.Values)
             {
-                broadcastNotification(player.ControlledEntity.DisplayName);
+                var sphere = new BoundingSphereD(player.ControlledEntity.GetPosition(), LIGHT_ENTITY_RADIUS);
+                var entities = MyEntities.GetEntitiesInSphere(ref sphere);
+                foreach (var entity in entities)
+                {
+                    broadcastNotification(entity.DefinitionId.ToString());
+                }
             }
         }
 
+        // (Only for offline-testing)
         private void setFastForward()
         {
             fastForward = true;
         }
 
+        // (Only for offline-testing)
         private void setNormal()
         {
             fastForward = false;
         }
 
+        // (Only for offline-testing)
         private void invokeServerAction(Action action)
         {
             serverAction = action;
             MyMultiplayer.RaiseEvent(this, x => x.ServerMethodInvokedByClient);
         }
 
+        // (Only for offline-testing)
         [Event, Reliable, Server]
         private void ServerMethodInvokedByClient()
         {
@@ -144,7 +158,6 @@ namespace ToughNights
                 return;
             }
 
-            broadcastNotification($"{player.ControlledEntity.DisplayName} is under attack! solarElevation: {solarElevation}");
             spawnBarbarian(playerPosition);
             spawnBarbarian(playerPosition);
         }
@@ -169,9 +182,7 @@ namespace ToughNights
 
         private static void spawnBarbarian(Vector3D position)
         {
-            var newPos = MyEntities.FindFreePlace(position, 1f, 200, 5, 0.5f);
-            if (!newPos.HasValue)
-                newPos = MyEntities.FindFreePlace(position, 1f, 200, 5, 5f);
+            var newPos = MyEntities.FindFreePlace(position, 1f, 200, 5, 5f);
             if (!newPos.HasValue)
             {
                 return;
