@@ -75,14 +75,12 @@ namespace ToughNights
         // (Only for offline-testing)
         private void invokeTest()
         {
-            broadcastNotification("Checking");
             var players = MyPlayers.Static.GetAllPlayers();
             foreach (MyPlayer player in players.Values)
             {
                 var position = player.ControlledEntity.GetPosition();
                 if (positionHasNearbyLightSource(position))
                 {
-                    broadcastNotification("It's a match!");
                 }
             }
         }
