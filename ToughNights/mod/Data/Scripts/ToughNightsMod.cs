@@ -1,6 +1,5 @@
 ﻿using Sandbox.Definitions;
 using Sandbox.Game.Entities;
-using Sandbox.Game.Gui;
 using Sandbox.Game.Players;
 using Sandbox.Game.SessionComponents;
 using Sandbox.ModAPI;
