@@ -9,9 +9,10 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Data</RootNamespace>
     <AssemblyName>Data</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -31,11 +32,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="MedievalEngineersModApi">
-      <HintPath>E:\SteamLibrary\steamapps\common\MedievalEngineersModSDK\OriginalContent\ModTools\MedievalEngineersModApi.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="mod\Data\Scripts\ToughNightsMod.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -44,6 +40,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="mod\Data\Controls.sbc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="MedievalEngineersModApi">
+      <HintPath>C:\Program Files (x86)\Steam\steamapps\common\MedievalEngineersModSDK\OriginalContent\ModTools\MedievalEngineersModApi.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
