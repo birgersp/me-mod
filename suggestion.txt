@@ -1,0 +1,56 @@
+[1:50 PM] Deepflame: I would consider doing it something like this:
+    [MySessionComponent(AlwaysOn = true)]
+    public class MyExampleSessionComponent : MySessionComponent
+    {
+        public static MyExampleSessionComponent Static => MySession.Static?.Components?.Get<MyExampleSessionComponent>();
+
+        private const double LIGHT_ENTITY_RADIUS = 10;
+        private HashSet<MyDefinitionId> m_lightSources = new HashSet<MyDefinitionId>();
+
+        protected override void OnLoad()
+        {
+            base.OnLoad();
+            if (MyObjectBuilderType.TryParse("Block", out var blockType))
+            {
+                m_lightSources.Add(new MyDefinitionId(blockType, "TorchWall"));
+                m_lightSources.Add(new MyDefinitionId(blockType, "TorchStand"));
+                m_lightSources.Add(new MyDefinitionId(blockType, "Brazier"));
+                m_lightSources.Add(new MyDefinitionId(blockType, "Bonfire"));
+                m_lightSources.Add(new MyDefinitionId(blockType, "BedWood"));
+            }
+        }
+
+        public bool HasNearbyLightSources(Vector3D position)
+        {
+            var sphere = new BoundingSphereD(position, LIGHT_ENTITY_RADIUS);
+
+            bool hasNearbySource = false;
+
+            List<MyEntity> results = PoolManager.Get<List<MyEntity>>();
+            MyGamePruningStructure.GetAllEntitiesInSphere(sphere, results);
+
+            foreach (var entity in results)
+            {
+                if (!entity.DefinitionId.HasValue)
+                    continue;
+
+                if (m_lightSources.Contains(entity.DefinitionId.Value))
+                {
+                    hasNearbySource = true;
+                    break;
+                }
+            }
+
+            PoolManager.Return(ref results);
+
+            return hasNearbySource;
+        }
+    }
+[1:50 PM] Deepflame: With a healthy dose of this recommendation:
+        // You should create a definition for your session component, and use this method to populate m_lightSources instead.
+        protected override void LoadDefinition(MySessionComponentDefinition definition)
+        {
+            base.LoadDefinition(definition);
+        }
+[1:51 PM] Deepflame: Usage is then:
+var nearbyResults = MyExampleSessionComponent.Static?.HasNearbyLightSources(position);
